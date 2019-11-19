@@ -25,6 +25,16 @@ static void write_syscall_signature_line(ofstream& os, const Syscall& sc, string
     });
 
     os << "uint64_t pc) {\n";
+
+    os << "    LTRACEF_LEVEL(0, \"t %p SYS_" << sc.name << " (" << sc.index << "): ";
+    sc.for_each_kernel_arg([&](const TypeSpec& arg) {
+        os << arg.name << "=0x%zx ";
+    });
+    os << "\\n\", get_current_thread()";
+    sc.for_each_kernel_arg([&](const TypeSpec& arg) {
+        os << ", (size_t)" << arg.name;
+    });
+    os << ");\n";
 }
 
 bool KernelWrapperGenerator::header(ofstream& os) {
