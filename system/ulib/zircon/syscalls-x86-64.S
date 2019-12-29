@@ -26,35 +26,18 @@
 
 .macro m_syscall name, num, nargs, public
 syscall_entry_begin \name
-    .cfi_same_value %r12
-    .cfi_same_value %r13
-.if \nargs <= 3
-    zircon_syscall \num, \name, \name
-    ret
-.elseif \nargs <= 6
-    mov      %rcx, %r10  // Argument 4
-    zircon_syscall \num, \name, \name
-    ret
-.elseif \nargs == 7
-    push_reg %r12
-    mov      0x10(%rsp), %r12  // Argument 7
-    mov      %rcx, %r10  // Argument 4
-    zircon_syscall \num, \name, \name
-    pop_reg  %r12
-    ret
-.elseif \nargs == 8
-    push_reg %r12
-    push_reg %r13
-    mov      0x18(%rsp), %r12  // Argument 7
-    mov      0x20(%rsp), %r13  // Argument 8
-    mov      %rcx, %r10  // Argument 4
-    zircon_syscall \num, \name, \name
-    pop_reg  %r13
-    pop_reg  %r12
-    ret
-.endif
+    mov $\num, %eax
+    jmpq *zcore_syscall_entry(%rip)
+// This symbol at the return address identifies this as an approved call site.
+    .hidden CODE_SYSRET_\name\()_VIA_\name
+CODE_SYSRET_\name\()_VIA_\name\():
 syscall_entry_end \name \public
 .endm
+
+.pushsection .rodata
+zcore_syscall_entry:
+    .quad 0xdeadbeaf
+.popsection
 
 #include <zircon/syscalls-x86-64.S>
 
